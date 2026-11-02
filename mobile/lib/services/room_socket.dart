@@ -13,10 +13,10 @@ class RoomSocket {
     );
     _socket = socket;
     socket.on('room:updated', (data) {
-      if (data is Map) onRoomUpdated?.call(Map<String, dynamic>.from(data));
+      if (data is Map) {\n          onRoomUpdated?.call(Map<String, dynamic>.from(data));\n        }
     });
     socket.on('game:state', (data) {
-      if (data is Map) onGameState?.call(Map<String, dynamic>.from(data));
+      if (data is Map) {\n          onGameState?.call(Map<String, dynamic>.from(data));\n        }
     });
     final connected = Completer<void>();
     socket.onConnect((_) { if (!connected.isCompleted) connected.complete(); });
@@ -32,7 +32,7 @@ class RoomSocket {
     if (socket == null || !socket.connected) throw StateError('Not connected to the game server.');
     final result = Completer<Map<String, dynamic>>();
     socket.emitWithAck(event, payload, ack: (data) {
-      if (result.isCompleted) return;
+      if (result.isCompleted) {\n        return;\n      }
       if (data is! Map || data['ok'] != true) {
         result.completeError(StateError('Room action failed: $data'));
       } else {
