@@ -15,8 +15,7 @@ class RivalRoomsApi {
   static const _tokenKey = 'rr_session_token';
   static const _playerIdKey = 'rr_player_id';
 
-  Future<Map<String, dynamic>> createOrRestoreGuest(
-      String displayName) async {
+  Future<Map<String, dynamic>> createOrRestoreGuest(String displayName) async {
     final prefs = await SharedPreferences.getInstance();
     var deviceId = prefs.getString(_playerIdKey);
     deviceId ??= 'rr_${DateTime.now().microsecondsSinceEpoch}_${DateTime.now().millisecond}';
@@ -35,8 +34,14 @@ class RivalRoomsApi {
     return Map<String, dynamic>.from(body['player'] as Map);
   }
 
-  Future<String> sessionToken() async {\n    final prefs = await SharedPreferences.getInstance();\n    final token = prefs.getString(_tokenKey);\n    if (token == null) throw const ApiException('Create a player session first.');\n    return token;\n  }\n\n  Future<Map<String, dynamic>> createRoom(
-      {required String gameId, int maxMembers = 2}) async {
+  Future<String> sessionToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString(_tokenKey);
+    if (token == null) throw const ApiException('Create a player session first.');
+    return token;
+  }
+
+  Future<Map<String, dynamic>> createRoom({required String gameId, int maxMembers = 2}) async {
     final response = await _client.post(
       Uri.parse('$baseUrl/v1/rooms'),
       headers: await _headers(),
@@ -55,9 +60,7 @@ class RivalRoomsApi {
   }
 
   Future<Map<String, String>> _headers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_tokenKey);
-    if (token == null) throw ApiException('Create a player session first.');
+    final token = await sessionToken();
     return {'content-type': 'application/json', 'authorization': 'Bearer $token'};
   }
 
@@ -80,9 +83,7 @@ class RivalRoomsApi {
 
   String _message(Map<String, dynamic> body, String fallback) {
     final error = body['error'];
-    if (error is Map && error['message'] is String) {
-      return error['message'] as String;
-    }
+    if (error is Map && error['message'] is String) return error['message'] as String;
     return fallback;
   }
 
