@@ -1,22 +1,24 @@
 # Delivery roadmap
 
-## Phase 0 — repository foundation (in progress)
+## Phase 0 — repository foundation (complete)
 - [x] Confirm independent repository and reference-only boundary.
 - [x] Record product requirements and architecture.
-- [ ] Establish runnable backend skeleton and tests.
-- [ ] Establish Flutter app shell and analysis baseline.
-- [ ] Add CI for backend and Android builds.
+- [x] Establish runnable backend skeleton and automated tests.
+- [x] Establish Flutter app shell and analysis baseline.
+- [x] Add CI for backend and Android builds.
 
-## Phase 1 — core platform
-- [ ] Room create/join/leave/ready/start lifecycle.
-- [ ] Secure anonymous identity and reconnect.
-- [ ] Versioned event protocol and server-authoritative command pipeline.
-- [ ] Local profile/preferences and leaderboard persistence adapter.
-- [ ] Two-device smoke test and basic observability.
+## Phase 1 — core platform (in progress)
+- [x] Room create/join/leave/ready/start lifecycle in the backend.
+- [x] Signed anonymous player sessions and reconnect grace handling.
+- [x] Versioned Tic Tac Toe commands and server-authoritative validation.
+- [x] PostgreSQL profile and leaderboard schema plus migration runner.
+- [ ] Connect the independent Render API to its PostgreSQL instance.
+- [ ] Complete two-device online smoke test against the deployed service.
+- [ ] Add automated Socket.IO integration tests and protocol failure coverage.
 
 ## Phase 2 — game framework
 - [ ] Game registry and shared lifecycle.
-- [ ] Rules/state reducers with deterministic unit tests.
+- [ ] Rules/state reducers with deterministic unit tests for each game.
 - [ ] Offline/online parity contract.
 - [ ] Implement games in testable batches; do not mark shell screens as complete games.
 
