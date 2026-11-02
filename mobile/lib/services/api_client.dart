@@ -64,7 +64,7 @@ class RivalRoomsApi {
   Map<String, dynamic> _roomResponse(http.Response response) {
     final body = _decode(response);
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_message(body, 'Room request failed.'));
+      throw const ApiException('Room request failed.');
     }
     return Map<String, dynamic>.from(body['room'] as Map);
   }
