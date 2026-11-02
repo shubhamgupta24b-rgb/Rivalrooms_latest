@@ -44,11 +44,28 @@ jobs:
         shell: bash
         run: |
           sed -i 's/gradle-[0-9.]*-all.zip/gradle-8.14.3-all.zip/' android/gradle/wrapper/gradle-wrapper.properties
-          if [ -f android/settings.gradle.kts ]; then
-            sed -i -E 's/(id\\(["'\\'\\']com\\.android\\.application["'\\'\\']\\) version )["'\\'\\'][^"'\\'\\']+["'\\'\\']/\\18.11.1/' android/settings.gradle.kts
-          else
-            sed -i -E "s/(id ['\\"]com\\.android\\.application['\\"] version )['\\"][^'\\"]+['\\"]/\\18.11.1/" android/settings.gradle
-          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          for name in ("settings.gradle.kts", "settings.gradle"):
+              path = Path("android") / name
+              if not path.exists():
+                  continue
+              source = path.read_text()
+              source, count = re.subn(
+                  r'(id\\(["\\']com\\.android\\.application["\\']\\)\\s+version\\s+)["\\'][^"\\']+["\\']',
+                  r'\\g<1>"8.11.1"', source, count=1)
+              if count == 0:
+                  source, count = re.subn(
+                      r'(id\\s+["\\']com\\.android\\.application["\\']\\s+version\\s+)["\\'][^"\\']+["\\']',
+                      r'\\g<1>"8.11.1"', source, count=1)
+              source = re.sub(
+                  r'(id\\(["\\']org\\.jetbrains\\.kotlin\\.android["\\']\\)\\s+version\\s+)["\\'][^"\\']+["\\']',
+                  r'\\g<1>"2.2.20"', source, count=1)
+              path.write_text(source)
+              print(path, "updated", "AGP match:", count)
+              break
+          PY
       - run: flutter pub get
       - run: dart format lib test
       - run: flutter analyze --no-fatal-infos
