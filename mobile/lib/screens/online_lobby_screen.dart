@@ -20,7 +20,7 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
   String? _playerId;
 
   Future<void> _run(Future<Map<String, dynamic>> Function() action) async {
-    if (_busy) return;
+    if (_busy) {\n      return;\n    }
     setState(() { _busy = true; _message = null; });
     try {
       if (_name.text.trim().isEmpty) {
