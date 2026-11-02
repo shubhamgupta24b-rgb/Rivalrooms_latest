@@ -35,6 +35,16 @@ jobs:
         with:
           channel: stable
       - run: flutter create --platforms=android --project-name rivalrooms_latest .
+      # google_mobile_ads 6.0.0 currently needs the Gradle 8 API surface.
+      - name: Pin Android build tooling
+        shell: bash
+        run: |
+          sed -i 's/gradle-[0-9.]*-all.zip/gradle-8.14.3-all.zip/' android/gradle/wrapper/gradle-wrapper.properties
+          if [ -f android/settings.gradle.kts ]; then
+            sed -i 's/com.android.application" version "[^"]*"/com.android.application" version "8.11.1"/' android/settings.gradle.kts
+          else
+            sed -i "s/com.android.application version '[^']*'/com.android.application version '8.11.1'/" android/settings.gradle
+          fi
       - run: flutter pub get
       - run: dart format lib test
       - run: flutter analyze --no-fatal-infos
