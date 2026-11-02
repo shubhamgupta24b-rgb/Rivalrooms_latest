@@ -16,14 +16,19 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
   RoomSocket? _socket;
   bool _busy = false;
   bool _ready = false;
-  String? _message;
-  Map<String, dynamic>? _room;
-  String? _playerId;
   bool _gameOpened = false;
+  String? _message;
+  String? _playerId;
+  Map<String, dynamic>? _room;
 
   Future<void> _run(Future<Map<String, dynamic>> Function() action) async {
-    if (_busy) {\n      return;\n    }
-    setState(() { _busy = true; _message = null; });
+    if (_busy) {
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
     try {
       if (_name.text.trim().isEmpty) {
         throw const ApiException('Enter a display name first.');
@@ -34,56 +39,96 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       final socket = RoomSocket();
       await socket.connect(token);
       final joined = await socket.joinRoom(room['id'] as String);
+      final playerId = player['playerId'] as String;
       socket.onRoomUpdated = (updated) {
-        if (mounted) setState(() => _room = updated);
+        if (mounted) {
+          setState(() => _room = updated);
+        }
       };
+      socket.onGameState = (game) => _openGame(socket, playerId, game);
       if (!mounted) {
         socket.close();
         return;
       }
       setState(() {
-        _playerId = player['playerId'] as String?;
+        _playerId = playerId;
         _room = joined;
         _socket = socket;
         _ready = _isReady(joined);
-        _message = 'Live connection established. Share code ${room['code']}.';
+        _message = 'Live connection established. Share code ' + room['code'].toString() + '.';
       });
     } catch (error) {
-      if (mounted) setState(() => _message = error.toString());
+      if (mounted) {
+        setState(() => _message = error.toString());
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
   bool _isReady(Map<String, dynamic> room) {
     final members = room['members'] as List? ?? const [];
-    final me = members.whereType<Map>().cast<Map<String, dynamic>>()
-        .where((member) => member['playerId'] == _playerId);
-    return me.isNotEmpty && me.first['ready'] == true;
+    for (final member in members.whereType<Map>()) {
+      if (member['playerId'] == _playerId) {
+        return member['ready'] == true;
+      }
+    }
+    return false;
   }
 
   Future<void> _setReady(bool value) async {
     final socket = _socket;
-    if (socket == null) return;
+    if (socket == null) {
+      return;
+    }
     try {
       final updated = await socket.setReady(value);
-      if (mounted) setState(() { _ready = value; _room = updated; });
+      if (mounted) {
+        setState(() {
+          _ready = value;
+          _room = updated;
+        });
+      }
     } catch (error) {
-      if (mounted) setState(() => _message = error.toString());
+      if (mounted) {
+        setState(() => _message = error.toString());
+      }
     }
   }
 
-  void _openGame(RoomSocket socket, String playerId, Map<String, dynamic> game) {\n    if (!mounted || _gameOpened) return;\n    _gameOpened = true;\n    Navigator.of(context).push(MaterialPageRoute(\n      builder: (_) => OnlineTicTacToeScreen(socket: socket, playerId: playerId, initialGame: game),\n    ));\n  }\n\n  Future<void> _startRoom() async {
+  void _openGame(RoomSocket socket, String playerId, Map<String, dynamic> game) {
+    if (!mounted || _gameOpened) {
+      return;
+    }
+    _gameOpened = true;
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => OnlineTicTacToeScreen(
+        socket: socket,
+        playerId: playerId,
+        initialGame: game,
+      ),
+    ));
+  }
+
+  Future<void> _startRoom() async {
     final socket = _socket;
-    if (socket == null) return;
+    final playerId = _playerId;
+    if (socket == null || playerId == null) {
+      return;
+    }
     try {
       final updated = await socket.startRoom();
-      if (mounted) setState(() {
-        _room = updated;
-        _message = 'Room started. The online game screen is the next integration step.';
-      });
+      if (mounted) {
+        setState(() => _room = updated);
+      }
+      final game = await socket.startTicTacToe();
+      _openGame(socket, playerId, game);
     } catch (error) {
-      if (mounted) setState(() => _message = error.toString());
+      if (mounted) {
+        setState(() => _message = error.toString());
+      }
     }
   }
 
@@ -107,46 +152,101 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       body: ListView(
         padding: const EdgeInsets.all(22),
         children: [
-          const Text('Play with friends', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900)),
+          const Text('Play with friends',
+              style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900)),
           const SizedBox(height: 8),
           const Text('Create a private room or join one using a code.',
               style: TextStyle(color: Colors.white60)),
           const SizedBox(height: 24),
-          TextField(controller: _name, maxLength: 24,
-            decoration: const InputDecoration(labelText: 'Display name', border: OutlineInputBorder())),
+          TextField(
+            controller: _name,
+            maxLength: 24,
+            decoration: const InputDecoration(
+              labelText: 'Display name',
+              border: OutlineInputBorder(),
+            ),
+          ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: _busy ? null : () => _run(() => _api.createRoom(gameId: 'tic_tac_toe', maxMembers: 2)),
-            icon: const Icon(Icons.add_circle_outline), label: const Text('CREATE TIC TAC TOE ROOM')),
+            onPressed: _busy
+                ? null
+                : () => _run(() => _api.createRoom(
+                      gameId: 'tic_tac_toe',
+                      maxMembers: 2,
+                    )),
+            icon: const Icon(Icons.add_circle_outline),
+            label: const Text('CREATE TIC TAC TOE ROOM'),
+          ),
           const SizedBox(height: 22),
-          const Center(child: Text('OR JOIN WITH CODE', style: TextStyle(color: Colors.white54, fontWeight: FontWeight.bold))),
+          const Center(
+            child: Text('OR JOIN WITH CODE',
+                style: TextStyle(
+                    color: Colors.white54, fontWeight: FontWeight.bold)),
+          ),
           const SizedBox(height: 12),
-          TextField(controller: _code, textCapitalization: TextCapitalization.characters,
-            maxLength: 6, decoration: const InputDecoration(labelText: '6-character room code', border: OutlineInputBorder())),
+          TextField(
+            controller: _code,
+            textCapitalization: TextCapitalization.characters,
+            maxLength: 6,
+            decoration: const InputDecoration(
+              labelText: '6-character room code',
+              border: OutlineInputBorder(),
+            ),
+          ),
           OutlinedButton.icon(
             onPressed: _busy ? null : () => _run(() => _api.joinRoom(_code.text)),
-            icon: const Icon(Icons.login), label: const Text('JOIN ROOM')),
-          if (_busy) const Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator())),
+            icon: const Icon(Icons.login),
+            label: const Text('JOIN ROOM'),
+          ),
+          if (_busy)
+            const Padding(
+              padding: EdgeInsets.all(18),
+              child: Center(child: CircularProgressIndicator()),
+            ),
           if (_message != null) ...[
             const SizedBox(height: 18),
-            Container(padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFF20232A), borderRadius: BorderRadius.circular(14)),
-              child: Text(_message!, style: const TextStyle(height: 1.4))),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF20232A),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(_message!, style: const TextStyle(height: 1.4)),
+            ),
           ],
           if (room != null) ...[
             const SizedBox(height: 18),
-            Text('ROOM ${room['code']}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 2)),
-            Text('${members.length} / ${room['maxMembers']} players • ${room['status']}'),
+            Text('ROOM ' + room['code'].toString(),
+                style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2)),
+            Text(members.length.toString() +
+                ' / ' +
+                room['maxMembers'].toString() +
+                ' players • ' +
+                room['status'].toString()),
             const SizedBox(height: 12),
             for (final member in members.whereType<Map>())
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: Icon(member['connected'] == true ? Icons.circle : Icons.circle_outlined,
-                    color: member['connected'] == true ? Colors.greenAccent : Colors.white38, size: 14),
+                leading: Icon(
+                  member['connected'] == true
+                      ? Icons.circle
+                      : Icons.circle_outlined,
+                  color: member['connected'] == true
+                      ? Colors.greenAccent
+                      : Colors.white38,
+                  size: 14,
+                ),
                 title: Text(member['displayName']?.toString() ?? 'Player'),
-                subtitle: Text(member['isHost'] == true ? 'Host' : 'Player'),
-                trailing: Text(member['ready'] == true ? 'READY' : 'NOT READY',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                subtitle:
+                    Text(member['isHost'] == true ? 'Host' : 'Player'),
+                trailing: Text(
+                  member['ready'] == true ? 'READY' : 'NOT READY',
+                  style: const TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.bold),
+                ),
               ),
             if (room['status'] == 'waiting' && !isHost)
               SwitchListTile(
@@ -161,9 +261,6 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('START MATCH'),
               ),
-            if (room['status'] == 'playing')
-              const Text('Match started. Waiting for the game view.',
-                  style: TextStyle(color: Colors.white70)),
           ],
         ],
       ),
