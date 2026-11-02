@@ -13,7 +13,7 @@ test('health endpoint identifies the independent service', async () => {
     assert.deepEqual(await response.json(), {
       ok: true,
       service: 'rivalrooms-latest-api',
-      version: '0.2.0'
+      version: '0.3.0'
     });
   } finally {
     await new Promise((resolve) => server.close(resolve));
