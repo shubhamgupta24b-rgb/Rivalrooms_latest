@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../services/room_socket.dart';
+import 'online_tic_tac_toe_screen.dart';
 
 class OnlineLobbyScreen extends StatefulWidget {
   const OnlineLobbyScreen({super.key});
@@ -18,6 +19,7 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
   String? _message;
   Map<String, dynamic>? _room;
   String? _playerId;
+  bool _gameOpened = false;
 
   Future<void> _run(Future<Map<String, dynamic>> Function() action) async {
     if (_busy) {\n      return;\n    }
@@ -71,7 +73,7 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
     }
   }
 
-  Future<void> _startRoom() async {
+  void _openGame(RoomSocket socket, String playerId, Map<String, dynamic> game) {\n    if (!mounted || _gameOpened) return;\n    _gameOpened = true;\n    Navigator.of(context).push(MaterialPageRoute(\n      builder: (_) => OnlineTicTacToeScreen(socket: socket, playerId: playerId, initialGame: game),\n    ));\n  }\n\n  Future<void> _startRoom() async {
     final socket = _socket;
     if (socket == null) return;
     try {
