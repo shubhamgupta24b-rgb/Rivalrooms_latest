@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,8 +19,10 @@ class RivalRoomsApi {
   Future<Map<String, dynamic>> createOrRestoreGuest(String displayName) async {
     final prefs = await SharedPreferences.getInstance();
     var deviceId = prefs.getString(_playerIdKey);
-    deviceId ??= 'rr_${DateTime.now().microsecondsSinceEpoch}_${DateTime.now().millisecond}';
+    deviceId ??=
+        'rr_${DateTime.now().microsecondsSinceEpoch}_${DateTime.now().millisecond}';
     await prefs.setString(_playerIdKey, deviceId);
+
     final response = await _client.post(
       Uri.parse('$baseUrl/v1/sessions'),
       headers: {'content-type': 'application/json'},
@@ -37,11 +40,16 @@ class RivalRoomsApi {
   Future<String> sessionToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_tokenKey);
-    if (token == null) {\n      throw const ApiException('Create a player session first.');\n    }
+    if (token == null) {
+      throw const ApiException('Create a player session first.');
+    }
     return token;
   }
 
-  Future<Map<String, dynamic>> createRoom({required String gameId, int maxMembers = 2}) async {
+  Future<Map<String, dynamic>> createRoom({
+    required String gameId,
+    int maxMembers = 2,
+  }) async {
     final response = await _client.post(
       Uri.parse('$baseUrl/v1/rooms'),
       headers: await _headers(),
@@ -61,7 +69,10 @@ class RivalRoomsApi {
 
   Future<Map<String, String>> _headers() async {
     final token = await sessionToken();
-    return {'content-type': 'application/json', 'authorization': 'Bearer $token'};
+    return {
+      'content-type': 'application/json',
+      'authorization': 'Bearer $token',
+    };
   }
 
   Map<String, dynamic> _roomResponse(http.Response response) {
@@ -83,7 +94,9 @@ class RivalRoomsApi {
 
   String _message(Map<String, dynamic> body, String fallback) {
     final error = body['error'];
-    if (error is Map && error['message'] is String) {\n      return error['message'] as String;\n    }
+    if (error is Map && error['message'] is String) {
+      return error['message'] as String;
+    }
     return fallback;
   }
 
@@ -93,6 +106,7 @@ class RivalRoomsApi {
 class ApiException implements Exception {
   const ApiException(this.message);
   final String message;
+
   @override
   String toString() => message;
 }
