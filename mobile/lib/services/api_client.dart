@@ -35,7 +35,7 @@ class RivalRoomsApi {
     return Map<String, dynamic>.from(body['player'] as Map);
   }
 
-  Future<Map<String, dynamic>> createRoom(
+  Future<String> sessionToken() async {\n    final prefs = await SharedPreferences.getInstance();\n    final token = prefs.getString(_tokenKey);\n    if (token == null) throw const ApiException('Create a player session first.');\n    return token;\n  }\n\n  Future<Map<String, dynamic>> createRoom(
       {required String gameId, int maxMembers = 2}) async {
     final response = await _client.post(
       Uri.parse('$baseUrl/v1/rooms'),
@@ -64,7 +64,7 @@ class RivalRoomsApi {
   Map<String, dynamic> _roomResponse(http.Response response) {
     final body = _decode(response);
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw const ApiException('Room request failed.');
+      throw ApiException(_message(body, 'Room request failed.'));
     }
     return Map<String, dynamic>.from(body['room'] as Map);
   }
