@@ -5,12 +5,14 @@ const { Server } = require('socket.io');
 const { RoomManager, RoomError } = require('./rooms/room_manager');
 const { createSessionService } = require('./auth/session');
 const { createStorage } = require('./storage/postgres');
+const { TicTacToeService, GameActionError } = require('./games/tic_tac_toe');
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '16kb' }));
 const secret = process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? null : 'local-development-session-secret-change-before-deploy');
 const sessions = createSessionService({ secret });
 const storage = createStorage();
+const games = new TicTacToeService();
 const rooms = new RoomManager({ maxMembers: Number(process.env.MAX_ROOM_MEMBERS || 10),
   codeLength: Number(process.env.ROOM_CODE_LENGTH || 6), reconnectGraceMs: Number(process.env.RECONNECT_GRACE_MS || 60000) });
 function requirePlayer(req, res, next) {
@@ -20,7 +22,7 @@ function requirePlayer(req, res, next) {
   req.player = player; next();
 }
 function handleError(res, error) {
-  const known = error instanceof RoomError;
+  const known = error instanceof RoomError || error instanceof GameActionError;
   res.status(known ? 400 : 500).json({ error: { code: known ? error.code : 'INTERNAL_ERROR',
     message: known ? error.message : 'Something went wrong.' } });
 }
@@ -55,6 +57,23 @@ app.get('/v1/leaderboards/:gameId', requirePlayer, async (req, res) => {
   if (!/^[a-z0-9_]{2,48}$/.test(req.params.gameId)) return res.status(400).json({ error: { code: 'INVALID_GAME', message: 'Invalid game identifier.' } });
   try { res.json({ gameId: req.params.gameId, entries: await storage.getLeaderboard(req.params.gameId, req.query.limit) }); }
   catch { res.status(503).json({ error: { code: 'STORAGE_UNAVAILABLE', message: 'Leaderboard could not be loaded.' } }); }
+});
+app.post('/v1/rooms/:roomId/games/tic-tac-toe/start', requirePlayer, (req, res) => {
+  try {
+    const room = rooms.rooms.get(req.params.roomId);
+    if (!room || !room.members.has(req.player.playerId)) throw new RoomError('NOT_A_MEMBER', 'Join this room first.');
+    const snapshot = rooms.snapshot(room);
+    res.json({ game: games.start(snapshot) });
+  } catch (error) { handleError(res, error); }
+});
+app.post('/v1/rooms/:roomId/games/tic-tac-toe/moves', requirePlayer, (req, res) => {
+  try {
+    const room = rooms.rooms.get(req.params.roomId);
+    if (!room || !room.members.has(req.player.playerId)) throw new RoomError('NOT_A_MEMBER', 'Join this room first.');
+    const game = games.move(rooms.snapshot(room), req.player.playerId, req.body?.cell, req.body?.expectedVersion);
+    io.to(room.id).emit('game:state', game);
+    res.json({ game });
+  } catch (error) { handleError(res, error); }
 });
 app.get('/v1/rooms/:code', requirePlayer, (req, res) => {
   const room = rooms.getByCode(req.params.code);
@@ -103,6 +122,27 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: true, room: snapshot });
     } catch (error) { ackError(ack, error); }
   });
+  socket.on('game:tic-tac-toe:start', (_payload = {}, ack) => {
+    try {
+      const id = rooms.socketToRoom.get(socket.id);
+      if (!id) throw new RoomError('NOT_IN_ROOM', 'Connect to a room first.');
+      const room = rooms.rooms.get(id);
+      if (room.hostId !== player.playerId) throw new RoomError('HOST_ONLY', 'Only the host can initialize the game.');
+      const game = games.start(rooms.snapshot(room));
+      io.to(id).emit('game:state', game);
+      if (typeof ack === 'function') ack({ ok: true, game });
+    } catch (error) { ackError(ack, error); }
+  });
+  socket.on('game:tic-tac-toe:move', ({ cell, expectedVersion } = {}, ack) => {
+    try {
+      const id = rooms.socketToRoom.get(socket.id);
+      if (!id) throw new RoomError('NOT_IN_ROOM', 'Connect to a room first.');
+      const room = rooms.rooms.get(id);
+      const game = games.move(rooms.snapshot(room), player.playerId, cell, expectedVersion);
+      io.to(id).emit('game:state', game);
+      if (typeof ack === 'function') ack({ ok: true, game });
+    } catch (error) { ackError(ack, error); }
+  });
   socket.on('room:leave', (_payload = {}, ack) => {
     try {
       const id = rooms.socketToRoom.get(socket.id);
@@ -118,4 +158,4 @@ sweepInterval.unref();
 const port = Number(process.env.PORT || 3000);
 if (require.main === module) server.listen(port, '0.0.0.0', () =>
   console.log(JSON.stringify({ level: 'info', event: 'server_listening', port, service: 'rivalrooms-latest' })));
-module.exports = { app, server, io, rooms, sessions, storage };
+module.exports = { app, server, io, rooms, sessions, storage, games };
