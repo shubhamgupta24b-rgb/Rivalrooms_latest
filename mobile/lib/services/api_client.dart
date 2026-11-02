@@ -37,7 +37,7 @@ class RivalRoomsApi {
   Future<String> sessionToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_tokenKey);
-    if (token == null) throw const ApiException('Create a player session first.');
+    if (token == null) {\n      throw const ApiException('Create a player session first.');\n    }
     return token;
   }
 
@@ -83,7 +83,7 @@ class RivalRoomsApi {
 
   String _message(Map<String, dynamic> body, String fallback) {
     final error = body['error'];
-    if (error is Map && error['message'] is String) return error['message'] as String;
+    if (error is Map && error['message'] is String) {\n      return error['message'] as String;\n    }
     return fallback;
   }
 
