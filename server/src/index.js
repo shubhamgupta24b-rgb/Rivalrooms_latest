@@ -145,8 +145,9 @@ io.on('connection', (socket) => {
       const room = rooms.rooms.get(id);
       const game = games.move(rooms.snapshot(room), player.playerId, cell, expectedVersion);
       if (game.status === 'finished' || game.status === 'draw') {
-        if (!storage.enabled) throw new GameActionError('STORAGE_NOT_CONFIGURED', 'Cannot finalize a ranked match without persistent storage.');
-        await storage.recordTicTacToeResult({ matchId: game.matchId, players: game.players, winner: game.winner });
+        if (storage.enabled) {
+          await storage.recordTicTacToeResult({ matchId: game.matchId, players: game.players, winner: game.winner });
+        }
       }
       io.to(id).emit('game:state', game);
       if (typeof ack === 'function') ack({ ok: true, game });
