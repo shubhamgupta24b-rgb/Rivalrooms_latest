@@ -16,9 +16,9 @@ Independent multiplayer mini-game platform. This repository is the sole source o
 
 ## Known gaps (do not treat as production-ready)
 
-- A separate PostgreSQL database and independent Render service still need to be provisioned and configured. Session creation currently returns a service-unavailable response until PostgreSQL is configured.
+- A separate Render PostgreSQL database has been provisioned in Singapore (free tier). The API service is not deployed or connected to it yet; session creation still returns service-unavailable until DATABASE_URL is configured and migrations are applied.
 - Room/game state is currently in process memory; it is not durable across restarts and is not horizontally scalable. Redis or another shared authoritative state layer is required before multiple server instances.
-- The online Tic Tac Toe flow is implemented in the client and server, but must pass a two-device integration test against a deployed backend/database before it is considered verified.
+- The online Tic Tac Toe flow is implemented in the client and server. Backend unit tests pass; a two-device integration test against a deployed backend/database is still required.
 - Match result persistence requires a healthy PostgreSQL connection.
 - The wider game catalogue, complete per-game mechanics/physics, AdMob consent and production IDs, privacy/store declarations, load tests, signed APK/AAB and Play Store release remain future work.
 - Device-local guest IDs are not a secure account recovery mechanism and can be lost on uninstall.
