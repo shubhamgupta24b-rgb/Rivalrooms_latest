@@ -7,9 +7,11 @@ async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false } });
   try {
-    const sql = fs.readFileSync(path.join(__dirname, '../migrations/001_initial.sql'), 'utf8');
-    await pool.query(sql);
-    process.stdout.write('Database schema is up to date.\n');
+    const directory = path.join(__dirname, '../migrations');
+    for (const file of fs.readdirSync(directory).filter((name) => name.endsWith('.sql')).sort()) {
+      await pool.query(fs.readFileSync(path.join(directory, file), 'utf8'));
+      process.stdout.write(`Applied ${file}\n`);
+    }
   } finally { await pool.end(); }
 }
 main().catch((error) => { process.stderr.write(error.message + '\n'); process.exitCode = 1; });
