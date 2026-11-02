@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/online_lobby_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -109,7 +110,16 @@ class HomeScreen extends StatelessWidget {
           const _SectionTitle(
               title: 'MULTIPLAYER', subtitle: 'Play with a room code'),
           const SizedBox(height: 12),
-          const _ComingSoonPanel(),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const OnlineLobbyScreen()),
+              ),
+              icon: const Icon(Icons.people_alt_outlined),
+              label: const Text('CREATE OR JOIN ONLINE ROOM'),
+            ),
+          ),
         ],
       ),
     );
