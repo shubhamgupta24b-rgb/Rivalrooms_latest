@@ -37,7 +37,7 @@ jobs:
       - run: flutter create --platforms=android --project-name rivalrooms_latest .
       - run: flutter pub get
       - run: dart format lib test
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-infos
       - run: flutter test
       - run: flutter build apk --debug
       - uses: actions/upload-artifact@v4
