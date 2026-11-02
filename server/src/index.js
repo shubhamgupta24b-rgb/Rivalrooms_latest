@@ -39,10 +39,10 @@ app.post('/v1/sessions', (req, res) => {
   if (typeof displayName !== 'string' || displayName.trim().length < 1 || displayName.trim().length > 24)
     return res.status(400).json({ error: { code: 'INVALID_NAME', message: 'Display name must be 1–24 characters.' } });
   const player = { playerId: deviceId, displayName: displayName.trim() };
-  if (!storage.enabled) return res.status(503).json({ error: { code: 'STORAGE_NOT_CONFIGURED', message: 'Player profiles are temporarily unavailable.' } });
-  storage.upsertProfile(player).then(() => {
-    res.status(201).json({ token: sessions.issue(player), player, expiresInSeconds: 2592000 });
-  }).catch(() => res.status(503).json({ error: { code: 'STORAGE_UNAVAILABLE', message: 'Player profile could not be saved.' } }));
+  const issue = () => res.status(201).json({ token: sessions.issue(player), player, expiresInSeconds: 2592000 });
+  if (!storage.enabled) return issue();
+  storage.upsertProfile(player).then(issue).catch(() =>
+    res.status(503).json({ error: { code: 'STORAGE_UNAVAILABLE', message: 'Player profile could not be saved.' } }));
 });
 app.post('/v1/rooms', requirePlayer, (req, res) => {
   try { res.status(201).json({ room: rooms.create({ ...req.player, gameId: req.body?.gameId, maxMembers: req.body?.maxMembers }) }); }
@@ -72,8 +72,9 @@ app.post('/v1/rooms/:roomId/games/tic-tac-toe/moves', requirePlayer, async (req,
     if (!room || !room.members.has(req.player.playerId)) throw new RoomError('NOT_A_MEMBER', 'Join this room first.');
     const game = games.move(rooms.snapshot(room), req.player.playerId, req.body?.cell, req.body?.expectedVersion);
     if (game.status === 'finished' || game.status === 'draw') {
-      if (!storage.enabled) throw new GameActionError('STORAGE_NOT_CONFIGURED', 'Cannot finalize a ranked match without persistent storage.');
-      await storage.recordTicTacToeResult({ matchId: game.matchId, players: game.players, winner: game.winner });
+      if (storage.enabled) {
+        await storage.recordTicTacToeResult({ matchId: game.matchId, players: game.players, winner: game.winner });
+      }
     }
     io.to(room.id).emit('game:state', game);
     res.json({ game });
