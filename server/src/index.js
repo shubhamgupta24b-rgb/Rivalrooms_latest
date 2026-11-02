@@ -66,11 +66,15 @@ app.post('/v1/rooms/:roomId/games/tic-tac-toe/start', requirePlayer, (req, res) 
     res.json({ game: games.start(snapshot) });
   } catch (error) { handleError(res, error); }
 });
-app.post('/v1/rooms/:roomId/games/tic-tac-toe/moves', requirePlayer, (req, res) => {
+app.post('/v1/rooms/:roomId/games/tic-tac-toe/moves', requirePlayer, async (req, res) => {
   try {
     const room = rooms.rooms.get(req.params.roomId);
     if (!room || !room.members.has(req.player.playerId)) throw new RoomError('NOT_A_MEMBER', 'Join this room first.');
     const game = games.move(rooms.snapshot(room), req.player.playerId, req.body?.cell, req.body?.expectedVersion);
+    if (game.status === 'finished' || game.status === 'draw') {
+      if (!storage.enabled) throw new GameActionError('STORAGE_NOT_CONFIGURED', 'Cannot finalize a ranked match without persistent storage.');
+      await storage.recordTicTacToeResult({ matchId: game.matchId, players: game.players, winner: game.winner });
+    }
     io.to(room.id).emit('game:state', game);
     res.json({ game });
   } catch (error) { handleError(res, error); }
@@ -133,12 +137,16 @@ io.on('connection', (socket) => {
       if (typeof ack === 'function') ack({ ok: true, game });
     } catch (error) { ackError(ack, error); }
   });
-  socket.on('game:tic-tac-toe:move', ({ cell, expectedVersion } = {}, ack) => {
+  socket.on('game:tic-tac-toe:move', async ({ cell, expectedVersion } = {}, ack) => {
     try {
       const id = rooms.socketToRoom.get(socket.id);
       if (!id) throw new RoomError('NOT_IN_ROOM', 'Connect to a room first.');
       const room = rooms.rooms.get(id);
       const game = games.move(rooms.snapshot(room), player.playerId, cell, expectedVersion);
+      if (game.status === 'finished' || game.status === 'draw') {
+        if (!storage.enabled) throw new GameActionError('STORAGE_NOT_CONFIGURED', 'Cannot finalize a ranked match without persistent storage.');
+        await storage.recordTicTacToeResult({ matchId: game.matchId, players: game.players, winner: game.winner });
+      }
       io.to(id).emit('game:state', game);
       if (typeof ack === 'function') ack({ ok: true, game });
     } catch (error) { ackError(ack, error); }
