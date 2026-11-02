@@ -215,33 +215,6 @@ class _GameTile extends StatelessWidget {
       );
 }
 
-class _ComingSoonPanel extends StatelessWidget {
-  const _ComingSoonPanel();
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1C22),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white12),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.people_alt_outlined,
-                size: 30, color: Color(0xFFFFB547)),
-            SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                'Create a private room or join friends with a code. Online lobby UI is being connected to the new server.',
-                style: TextStyle(color: Colors.white70, height: 1.4),
-              ),
-            ),
-          ],
-        ),
-      );
-}
-
 class TicTacToeScreen extends StatefulWidget {
   const TicTacToeScreen({super.key});
 
