@@ -67,6 +67,7 @@ jobs:
               raise SystemExit(f"Could not pin plugins: AGP={found_agp}, Kotlin={found_kotlin}")
           path.write_text("\n".join(lines) + "\n")
           print(f"Pinned AGP 8.11.1 and Kotlin 2.2.20 in {path}")
+          print(path.read_text())
           PY
       - run: flutter pub get
       - run: dart format lib test
