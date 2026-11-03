@@ -54,9 +54,9 @@ jobs:
               lines = path.read_text().splitlines()
               for i, line in enumerate(lines):
                   if "com.android.application" in line and "version" in line:
-                      lines[i] = re.sub(r"version\\s+['\\"][^'\\"]+['\\"]", 'version "8.11.1"', line)
+                      lines[i] = re.sub(r"version\s+['\"][^'\"]+['\"]", 'version "8.11.1"', line)
                   if "org.jetbrains.kotlin.android" in line and "version" in line:
-                      lines[i] = re.sub(r"version\\s+['\\"][^'\\"]+['\\"]", 'version "2.2.20"', line)
+                      lines[i] = re.sub(r"version\s+['\"][^'\"]+['\"]", 'version "2.2.20"', line)
               path.write_text("\n".join(lines) + "\n")
               print("Pinned Android plugins in", path)
               break
