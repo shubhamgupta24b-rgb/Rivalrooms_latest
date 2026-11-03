@@ -47,19 +47,29 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-          for name in ("settings.gradle.kts", "settings.gradle"):
-              path = Path("android") / name
-              if not path.exists():
-                  continue
-              lines = path.read_text().splitlines()
-              for i, line in enumerate(lines):
-                  if "com.android.application" in line and "version" in line:
-                      lines[i] = re.sub(r"version\s+['\"][^'\"]+['\"]", 'version "8.11.1"', line)
-                  if "org.jetbrains.kotlin.android" in line and "version" in line:
-                      lines[i] = re.sub(r"version\s+['\"][^'\"]+['\"]", 'version "2.2.20"', line)
-              path.write_text("\n".join(lines) + "\n")
-              print("Pinned Android plugins in", path)
-              break
+
+          path = Path("android/settings.gradle.kts")
+          if not path.exists():
+              path = Path("android/settings.gradle")
+          if not path.exists():
+              raise SystemExit("Flutter did not generate Android settings.gradle(.kts)")
+
+          lines = path.read_text().splitlines()
+          found_android = False
+          found_kotlin = False
+          for i, line in enumerate(lines):
+              if "com.android.application" in line and "version" in line:
+                  lines[i] = re.sub(r'version\\s+"[^"]+"', 'version "8.11.1"', line)
+                  found_android = True
+              if "org.jetbrains.kotlin.android" in line and "version" in line:
+                  lines[i] = re.sub(r'version\\s+"[^"]+"', 'version "2.2.20"', line)
+                  found_kotlin = True
+
+          if not found_android or not found_kotlin:
+              raise SystemExit(f"Plugin pin failed: AGP={found_android}, Kotlin={found_kotlin}")
+
+          path.write_text("\\n".join(lines) + "\\n")
+          print(f"Pinned AGP 8.11.1 and Kotlin 2.2.20 in {path}")
           PY
       - run: flutter pub get
       - run: dart format lib test
