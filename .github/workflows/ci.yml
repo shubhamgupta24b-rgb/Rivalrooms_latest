@@ -55,20 +55,20 @@ jobs:
               raise SystemExit("Flutter did not generate Android settings.gradle(.kts)")
 
           lines = path.read_text().splitlines()
-          found_android = False
-          found_kotlin = False
+          found_android = found_kotlin = False
+          version_pattern = "version" + chr(92) + 's+"[^"]+"'
           for i, line in enumerate(lines):
               if "com.android.application" in line and "version" in line:
-                  lines[i] = re.sub(r'version\\s+"[^"]+"', 'version "8.11.1"', line)
+                  lines[i] = re.sub(version_pattern, 'version "8.11.1"', line)
                   found_android = True
               if "org.jetbrains.kotlin.android" in line and "version" in line:
-                  lines[i] = re.sub(r'version\\s+"[^"]+"', 'version "2.2.20"', line)
+                  lines[i] = re.sub(version_pattern, 'version "2.2.20"', line)
                   found_kotlin = True
 
           if not found_android or not found_kotlin:
               raise SystemExit(f"Plugin pin failed: AGP={found_android}, Kotlin={found_kotlin}")
 
-          path.write_text("\\n".join(lines) + "\\n")
+          path.write_text(chr(10).join(lines) + chr(10))
           print(f"Pinned AGP 8.11.1 and Kotlin 2.2.20 in {path}")
           PY
       - run: flutter pub get
